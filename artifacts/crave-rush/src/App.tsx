@@ -4,8 +4,12 @@ import {
   ArrowLeft,
   ArrowRight,
   Bike,
+  BookOpen,
   Check,
+  ChefHat,
   CircleCheck,
+  CircleX,
+  Coins,
   CreditCard,
   Home as HomeIcon,
   MapPinned,
@@ -16,6 +20,7 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  Store,
   Ticket,
   Timer,
   Trash2,
@@ -42,7 +47,12 @@ type Product = {
   accent: string;
 };
 type CartLine = Product & { quantity: number };
-type Stage = 'browse' | 'checkout' | 'tracking';
+type Recipe = {
+  chefLine: string;
+  ingredients: string[];
+  steps: string[];
+};
+type Stage = 'browse' | 'checkout' | 'tracking' | 'finale';
 
 const queryClient = new QueryClient();
 
@@ -138,18 +148,24 @@ const promoCodes = [
   { code: 'SNACK30', rate: 0.3, label: '30% off', color: '#b9e2d0' },
   { code: 'DELULU', rate: 0.2, label: '20% off', color: '#ffb0a4' },
 ];
+const recipeBook: Record<string, Recipe> = {
+  'midnight-pancakes': { chefLine: 'Stack, drizzle, pretend this was a difficult decision.', ingredients: ['1 cup pancake mix', '1 cup vanilla cloud cream', 'A handful of berries', 'Syrup with poor impulse control'], steps: ['Whisk the mix until it looks committed.', 'Cook three pancakes and stack them like a tiny edible skyscraper.', 'Add cream, berries, and an irresponsible syrup drizzle.', 'Serve immediately, preferably while claiming you made it from scratch.'] },
+  'crush-burger': { chefLine: 'Smash it flat, add cheese, call the chaos technique.', ingredients: ['1 brioche bun', '1 seasoned beef patty', '2 slices molten cheddar', 'Pickles, onions, and burger sauce'], steps: ['Heat a pan until it feels emotionally prepared.', 'Smash the patty thin and cook until dramatically browned.', 'Melt cheddar over the patty and toast the bun.', 'Stack everything. Do not overthink it; the burger certainly did not.'] },
+  'disco-tacos': { chefLine: 'Put three tiny parties in shells and hope the salsa behaves.', ingredients: ['3 crispy taco shells', 'Seasoned filling', 'Lime crema', 'Neon salsa and shredded lettuce'], steps: ['Warm the filling and pretend you measured the seasoning.', 'Fill each shell with a generous amount of confidence.', 'Add lettuce, crema, and salsa in colorful layers.', 'Serve before the shells realize they are structurally doomed.'] },
+  'soft-serve-cloud': { chefLine: 'Swirl, drizzle, and charge extra for the cloud-shaped delusion.', ingredients: ['Vanilla soft serve', 'Burnt caramel sauce', 'Crunchy topping', 'One very optimistic cone'], steps: ['Spin the soft serve into a tall swirl.', 'Drizzle with caramel like you are signing a dessert contract.', 'Add crunch and immediately take a photo.', 'Eat quickly before physics files a complaint.'] },
+  'green-room-noodles': { chefLine: 'Toss noodles, add chili crisp, look mysteriously well-rested.', ingredients: ['Glossy noodles', 'Bok choy', 'Chili crisp', 'Soy, garlic, and sesame'], steps: ['Boil noodles until they stop resisting.', 'Toss with soy, garlic, sesame, and a suspicious amount of chili crisp.', 'Fold in bok choy until bright and barely cooperative.', 'Serve hot and accept compliments you did not earn.'] },
+  'electric-lemonade': { chefLine: 'Add fizz, add ice, rename lemonade as a personality.', ingredients: ['Fresh lemon juice', 'Sparkling water', 'Ice', 'Simple syrup and lemon wheels'], steps: ['Stir lemon juice and syrup until the sourness has a budget.', 'Fill a glass with ice.', 'Top with sparkling water and stir gently.', 'Garnish with a lemon wheel and a sense of superiority.'] },
+};
 const trackerSteps = [
-  { label: 'Food is preparing', detail: 'Our imaginary chefs are moving quickly.', emoji: '🍳', icon: Zap },
-  { label: 'Rider picked up your food', detail: 'A tiny scooter has accepted the mission.', emoji: '🛵', icon: Bike },
-  { label: 'Rider is on the way with your food', detail: 'The route is confident. The delivery is not.', emoji: '🚴', icon: Bike },
-  { label: 'Poye poye, food never came', detail: 'A beautiful ending to a fictional order.', emoji: '🍽️', icon: PackageCheck },
+  { label: 'Food is preparing', detail: 'The chef has located a pan. Huge progress.', emoji: '🍳', icon: Zap },
+  { label: 'Rider is on the way-ish', detail: 'A tiny scooter is moving with confidence it did not earn.', emoji: '🛵', icon: Bike },
+  { label: 'Oops. The food stayed here', detail: 'The restaurant has your meal. You still have your money. Everybody wins?', emoji: '🍽️', icon: PackageCheck },
 ];
 const arrivalSeconds = 180;
-const stageSeconds = 45;
+const stageSeconds = 60;
 const routePoints = [
   { left: 12, top: 77 },
   { left: 31, top: 60 },
-  { left: 52, top: 44 },
   { left: 71, top: 29 },
 ];
 
@@ -477,12 +493,100 @@ function Checkout({ cart, onBack, onPlace }: { cart: CartLine[]; onBack: () => v
   );
 }
 
-function Tracker({ orderNumber, onAgain }: { orderNumber: string; onAgain: () => void }) {
+function RecipeReveal({ cart, dark = false }: { cart: CartLine[]; dark?: boolean }) {
+  const [openRecipe, setOpenRecipe] = useState<string | null>(null);
+  return (
+    <section className={`rounded-[1.8rem] border p-6 sm:p-8 ${dark ? 'border-[#6872c4] bg-[#303aa9] text-[#f8f3e8]' : 'border-[#d5d4c8] bg-[#fbf9f1]'}`} data-testid="recipe-reveal">
+      <div className="flex items-start gap-3">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#f1db2f] text-[#252f9f]"><BookOpen size={21} /></div>
+        <div>
+          <p className={`font-mono-custom text-[10px] uppercase tracking-[.15em] ${dark ? 'text-[#cbd0ff]' : 'text-[#6570a4]'}`}>While you wait</p>
+          <h2 className={`mt-2 font-display text-2xl font-bold tracking-[-.05em] ${dark ? 'text-[#f8f3e8]' : 'text-[#252f9f]'}`}>Want the recipe?</h2>
+          <p className={`mt-2 text-sm leading-relaxed ${dark ? 'text-[#cbd0ff]' : 'text-[#6570a4]'}`}>Or should we explain how the chef made it look busy for three minutes?</p>
+        </div>
+      </div>
+      <div className="mt-6 space-y-3">
+        {cart.map((item) => {
+          const recipe = recipeBook[item.id];
+          const isOpen = openRecipe === item.id;
+          return (
+            <div key={item.id} className={`overflow-hidden rounded-2xl border ${dark ? 'border-[#6872c4] bg-[#252f9f]' : 'border-[#d5d4c8] bg-[#f4efe4]'}`}>
+              <div className="flex items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className={`font-display font-bold ${dark ? 'text-[#f8f3e8]' : 'text-[#252f9f]'}`}>{item.name}</p>
+                  <p className={`mt-1 font-mono-custom text-[9px] uppercase tracking-[.08em] ${dark ? 'text-[#aeb5f0]' : 'text-[#6570a4]'}`}>The chef's alleged method</p>
+                </div>
+                <button onClick={() => setOpenRecipe(isOpen ? null : item.id)} className="shrink-0 rounded-full bg-[#f07863] px-3 py-2 font-mono-custom text-[9px] uppercase tracking-[.08em] text-[#252f9f] transition hover:-translate-y-0.5" data-testid={`button-recipe-${item.id}`}>
+                  {isOpen ? 'Hide the evidence' : 'Reveal recipe'}
+                </button>
+              </div>
+              {isOpen && recipe && (
+                <div className={`animate-slide-in border-t p-4 ${dark ? 'border-[#6872c4] bg-[#303aa9]' : 'border-[#d5d4c8] bg-[#fbf9f1]'}`} data-testid={`recipe-content-${item.id}`}>
+                  <p className={`font-display text-sm font-bold ${dark ? 'text-[#f1db2f]' : 'text-[#f07863]'}`}>{recipe.chefLine}</p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div><p className={`font-mono-custom text-[9px] uppercase tracking-[.1em] ${dark ? 'text-[#aeb5f0]' : 'text-[#6570a4]'}`}>Ingredients</p><ul className={`mt-2 space-y-1.5 text-xs leading-relaxed ${dark ? 'text-[#f8f3e8]' : 'text-[#252f9f]'}`}>{recipe.ingredients.map((ingredient) => <li key={ingredient}>• {ingredient}</li>)}</ul></div>
+                    <div><p className={`font-mono-custom text-[9px] uppercase tracking-[.1em] ${dark ? 'text-[#aeb5f0]' : 'text-[#6570a4]'}`}>Instructions</p><ol className={`mt-2 space-y-1.5 text-xs leading-relaxed ${dark ? 'text-[#f8f3e8]' : 'text-[#252f9f]'}`}>{recipe.steps.map((step, index) => <li key={step}><span className="mr-1 font-mono-custom text-[10px] text-[#f07863]">{index + 1}.</span>{step}</li>)}</ol></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function Finale({ orderNumber, cart, onAgain }: { orderNumber: string; cart: CartLine[]; onAgain: () => void }) {
+  const [finalSeconds, setFinalSeconds] = useState(stageSeconds);
+  useEffect(() => {
+    const timer = window.setInterval(() => setFinalSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return (
+    <main className="relative min-h-[calc(100dvh-73px)] overflow-hidden bg-[#252f9f] px-5 py-10 text-[#f8f3e8] lg:px-10 lg:py-16" data-testid="page-finale">
+      <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full border-[2px] border-dashed border-[#6872c4] animate-[spin_18s_linear_infinite]" />
+      <div className="pointer-events-none absolute -right-16 bottom-12 h-96 w-96 rounded-full border-[2px] border-dashed border-[#6872c4] animate-[spin_24s_linear_infinite_reverse]" />
+      <div className="relative mx-auto max-w-[1180px]">
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f1db2f]">Order {orderNumber} / phase 3 of 3</p><p className="mt-3 font-mono-custom text-[10px] uppercase tracking-[.14em] text-[#aeb5f0]">The grand delivery reveal</p></div>
+          <button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#6872c4] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#f8f3e8] transition hover:bg-[#303aa9] sm:self-end" data-testid="button-order-again-finale"><RotateCcw size={14} /> Order again</button>
+        </div>
+        <div className="grid items-center gap-10 lg:grid-cols-[1fr_.8fr]">
+          <div>
+            <div className="mb-7 inline-flex rotate-[-4deg] items-center gap-2 rounded-full border-2 border-[#f07863] bg-[#f07863] px-4 py-2 font-mono-custom text-[10px] uppercase tracking-[.14em] text-[#252f9f] shadow-[5px_5px_0_#f1db2f] animate-stamp"><CircleX size={15} /> Plot twist unlocked</div>
+            <h1 className="font-display text-[clamp(4rem,10vw,9rem)] font-bold leading-[.78] tracking-[-.1em] text-[#f8f3e8]">OPS<span className="text-[#f07863]">SSS.</span></h1>
+            <p className="mt-7 max-w-[600px] font-display text-[clamp(1.5rem,3vw,2.4rem)] font-bold leading-[.98] text-[#f1db2f]">Food is in the restaurant.<br />Your money is in your pocket.</p>
+            <p className="mt-6 max-w-[540px] text-base leading-relaxed text-[#cbd0ff]">After a full three-minute cinematic journey, the meal has bravely remained exactly where it started. The restaurant calls this “freshness.” We call it a plot hole with excellent margins.</p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="rounded-xl border border-[#6872c4] bg-[#303aa9] px-4 py-3"><p className="font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#aeb5f0]">Refund status</p><p className="mt-1 font-display text-xl font-bold text-[#f1db2f]">Still yours</p></div>
+              <div className="rounded-xl border border-[#6872c4] bg-[#303aa9] px-4 py-3"><p className="font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#aeb5f0]">Final phase timer</p><p className="mt-1 font-display text-xl font-bold text-[#f8f3e8]">{clock(finalSeconds)}</p></div>
+            </div>
+          </div>
+          <div className="relative mx-auto h-[390px] w-full max-w-[440px]">
+            <div className="absolute inset-[9%] rounded-full border-[3px] border-dashed border-[#6872c4] animate-[spin_16s_linear_infinite]" />
+            <div className="absolute inset-[21%] rounded-full bg-[#f1db2f] shadow-[12px_12px_0_#f07863] animate-[pulse_3s_ease-in-out_infinite]" />
+            <div className="absolute left-1/2 top-1/2 z-10 grid h-40 w-40 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[2.5rem] border-4 border-[#252f9f] bg-[#f8f3e8] text-[#252f9f] shadow-[8px_8px_0_#252f9f] animate-[float-up_4s_ease-in-out_infinite]"><Store size={70} strokeWidth={1.5} /></div>
+            <div className="absolute left-[7%] top-[26%] rounded-xl border-2 border-[#252f9f] bg-[#f07863] px-3 py-2 font-mono-custom text-[9px] uppercase tracking-[.08em] text-[#252f9f] shadow-[3px_3px_0_#252f9f] animate-[float-up_3.2s_ease-in-out_infinite]">Food: safe</div>
+            <div className="absolute bottom-[18%] right-[4%] rounded-xl border-2 border-[#252f9f] bg-[#b9e2d0] px-3 py-2 font-mono-custom text-[9px] uppercase tracking-[.08em] text-[#252f9f] shadow-[3px_3px_0_#252f9f] animate-[float-up_3.8s_ease-in-out_infinite_reverse]"><Coins size={14} className="mr-1 inline" /> Money: also safe</div>
+            <div className="absolute right-[9%] top-[8%] rounded-full bg-[#f07863] p-3 text-[#252f9f] animate-[spin_8s_linear_infinite]"><ChefHat size={24} /></div>
+          </div>
+        </div>
+        <div className="mt-12"><RecipeReveal cart={cart} dark /></div>
+      </div>
+    </main>
+  );
+}
+
+function Tracker({ orderNumber, cart, onAgain, onFinish }: { orderNumber: string; cart: CartLine[]; onAgain: () => void; onFinish: () => void }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(() => setElapsedSeconds((seconds) => Math.min(seconds + 1, arrivalSeconds)), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (elapsedSeconds >= stageSeconds * 2) onFinish();
+  }, [elapsedSeconds, onFinish]);
   const activeStep = Math.min(trackerSteps.length - 1, Math.floor(elapsedSeconds / stageSeconds));
   const remainingSeconds = Math.max(0, arrivalSeconds - elapsedSeconds);
   const rawRouteSegment = (elapsedSeconds / arrivalSeconds) * (routePoints.length - 1);
@@ -499,7 +603,7 @@ function Tracker({ orderNumber, onAgain }: { orderNumber: string; onAgain: () =>
   const CurrentIcon = trackerSteps[activeStep].icon;
   return (
     <main className="mx-auto max-w-[1280px] px-5 py-10 lg:px-10 lg:py-16" data-testid="page-tracking">
-       <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f07863]">Order {orderNumber}</p><h1 className="mt-3 font-display text-[clamp(3.3rem,7vw,6.8rem)] font-bold leading-[.86] tracking-[-.09em] text-[#252f9f]">It is<br /><span className="text-[#f07863]">on the way-ish.</span></h1><p className="mt-5 max-w-[490px] text-base leading-relaxed text-[#6570a4]">A three-minute suspense film starring one tiny scooter, four dramatic stages, and absolutely no dispatched food.</p></div><button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#d5d4c8] bg-[#fbf9f1] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#252f9f] sm:self-end" data-testid="button-order-again"><RotateCcw size={14} /> Order again</button></div>
+       <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f07863]">Order {orderNumber}</p><h1 className="mt-3 font-display text-[clamp(3.3rem,7vw,6.8rem)] font-bold leading-[.86] tracking-[-.09em] text-[#252f9f]">It is<br /><span className="text-[#f07863]">on the way-ish.</span></h1><p className="mt-5 max-w-[490px] text-base leading-relaxed text-[#6570a4]">A three-minute suspense film in three acts: one pan, one scooter, and one restaurant with an excellent return policy.</p></div><button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#d5d4c8] bg-[#fbf9f1] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#252f9f] sm:self-end" data-testid="button-order-again"><RotateCcw size={14} /> Order again</button></div>
       <div className="grid gap-7 lg:grid-cols-[1.15fr_.85fr]">
          <div>
          <section className="relative min-h-[440px] overflow-hidden rounded-[1.8rem] border border-[#bfc0d7] bg-[#d9e4dc]" data-testid="map-tracker">
@@ -523,7 +627,8 @@ function Tracker({ orderNumber, onAgain }: { orderNumber: string; onAgain: () =>
           <div className="flex items-start justify-between gap-4 border-b border-[#d5d4c8] pb-6"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.14em] text-[#6570a4]">Live status</p><h2 className="mt-2 font-display text-2xl font-bold tracking-[-.05em] text-[#252f9f]" data-testid="text-current-status">{trackerSteps[activeStep].label}</h2></div><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f1db2f] text-[#252f9f] animate-pop"><CurrentIcon size={23} /></div></div>
            <div className="relative mt-7 space-y-7 pl-2">{trackerSteps.map((step, index) => { const done = index <= activeStep; return <div key={step.label} className="relative flex gap-4" data-testid={`tracker-step-${index}`}><div className={`relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 text-lg transition-all ${done ? 'border-[#252f9f] bg-[#252f9f]' : 'border-[#d5d4c8] bg-[#f4efe4] grayscale'}`}><span aria-hidden="true">{step.emoji}</span></div>{index < trackerSteps.length - 1 && <div className={`absolute left-[17px] top-9 h-8 w-0.5 ${index < activeStep ? 'bg-[#252f9f]' : 'bg-[#d5d4c8]'}`} />}<div><p className={`font-display font-bold ${done ? 'text-[#252f9f]' : 'text-[#a4a6b4]'}`}>{step.label}</p><p className={`mt-1 text-xs leading-relaxed ${done ? 'text-[#6570a4]' : 'text-[#a4a6b4]'}`}>{step.detail}</p></div></div>; })}</div>
           <div className="mt-8 rounded-xl bg-[#f07863] p-4 text-[#252f9f]" data-testid="text-tracker-wink"><div className="flex gap-3"><Sparkles size={18} className="shrink-0" /><p className="font-display text-sm font-bold leading-relaxed">Plot twist: this order will never arrive. But look at that little scooter go.</p></div></div>
-           <div className="mt-5 flex items-center justify-between gap-3 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]"><span className="flex items-center gap-2"><Timer size={13} /> Stage {activeStep + 1} of 4</span><span>{currentStageRemaining ? `${clock(currentStageRemaining)} until next bit` : 'final bit unlocked'}</span></div>
+            <div className="mt-5 flex items-center justify-between gap-3 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]"><span className="flex items-center gap-2"><Timer size={13} /> Phase {activeStep + 1} of 3</span><span>{currentStageRemaining ? `${clock(currentStageRemaining)} until next bit` : 'final bit unlocked'}</span></div>
+            <div className="mt-7"><RecipeReveal cart={cart} /></div>
         </section>
       </div>
     </main>
@@ -547,12 +652,14 @@ function Home() {
   const changeCart = (id: string, delta: number) => setCart((current) => current.map((item) => item.id === id ? { ...item, quantity: item.quantity + delta } : item).filter((item) => item.quantity > 0));
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
   const goHome = () => { setStage('browse'); setBagOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const goToFinale = () => { setStage('finale'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const placeOrder = (address: string) => { if (!address.trim()) return; setOrderNumber(`CR-${Math.floor(1000 + Math.random() * 8999)}`); setStage('tracking'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   return (
     <AppShell itemCount={count} onBag={() => setBagOpen(true)} stage={stage} onHome={goHome} cartNotice={cartNotice}>
       {stage === 'browse' && <Browse onAdd={addToCart} onBag={() => setBagOpen(true)} itemCount={count} />}
       {stage === 'checkout' && <Checkout cart={cart} onBack={() => setStage('browse')} onPlace={placeOrder} />}
-      {stage === 'tracking' && <Tracker orderNumber={orderNumber} onAgain={goHome} />}
+      {stage === 'tracking' && <Tracker orderNumber={orderNumber} cart={cart} onAgain={goHome} onFinish={goToFinale} />}
+      {stage === 'finale' && <Finale orderNumber={orderNumber} cart={cart} onAgain={goHome} />}
       {bagOpen && <BagDrawer cart={cart} onClose={() => setBagOpen(false)} onChange={changeCart} onCheckout={() => { setBagOpen(false); setStage('checkout'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
     </AppShell>
   );
