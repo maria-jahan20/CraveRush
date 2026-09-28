@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "CraveRush — Fake Food Delivery Toy"
+description = "A colorful, interactive fake food delivery experience where users can search craveable dishes, build a cart, apply playful promo codes, and watch a theatrical order tracker for an order that never actually arrives."
+version = "1.0.0"
+id = "artifacts/crave-rush"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18607
+
+[services.development]
+run = "pnpm --filter @workspace/crave-rush run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/crave-rush", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/crave-rush/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18607"
+BASE_PATH = "/"

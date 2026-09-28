@@ -1,10 +1,11 @@
-# [Project name]
+# CraveRush
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+CraveRush is a colorful fake food-delivery toy: users can search cravings, build a bag, apply a promo, place a fictional order, and watch a playful delivery tracker that never actually delivers food.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/crave-rush run dev` — run the CraveRush web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -22,23 +23,33 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/crave-rush/src/App.tsx` — browse, search, bag, checkout, promo, order tracking, and local state
+- `artifacts/crave-rush/src/index.css` — CraveRush visual theme, fonts, texture, and motion
+- `artifacts/crave-rush/.replit-artifact/artifact.toml` — artifact metadata and preview service
+- `artifacts/api-server` — shared API scaffold; CraveRush is intentionally frontend-only for the toy flow
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first build is frontend-only with local React state because the product is intentionally fictional and does not need real order persistence.
+- The delivery flow is deliberately theatrical: receipt math, arbitrary addresses, the `DELULU` promo, and tracker states are all part of the joke.
+- Remote food photography is used for the visual menu so the browsing experience feels immediate without introducing image storage or a database.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Search by food, mood, description, or tag.
+- Filter cravings by savory, sweet, or sip.
+- Add items to a bag, adjust quantities, remove items, and review the receipt.
+- Enter any address, apply `DELULU` for a fictional discount, and place the order.
+- Watch the fake order move through receiving, pretend kitchen prep, rider travel, and an explicit “never arriving” punchline.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- The user wants colorful, eye-catching, playful experiences for this fictional delivery concept.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- This is a toy and must not be presented as a real food-delivery service.
+- The order tracker is intentionally fake and ends with a clear no-delivery wink.
 
 ## Pointers
 
