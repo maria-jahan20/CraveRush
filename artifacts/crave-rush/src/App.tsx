@@ -31,6 +31,11 @@ type Product = {
   name: string;
   description: string;
   price: number;
+  originalPrice?: number;
+  discount?: number;
+  rating: number;
+  reviews: number;
+  popular?: boolean;
   category: string;
   image: string;
   tag: string;
@@ -46,7 +51,12 @@ const products: Product[] = [
     id: 'midnight-pancakes',
     name: 'Midnight Pancakes',
     description: 'Stacked high with vanilla clouds, berry sparks, and a reckless amount of syrup.',
-    price: 13.5,
+    price: 12.6,
+    originalPrice: 18,
+    discount: 30,
+    rating: 4.9,
+    reviews: 238,
+    popular: true,
     category: 'Sweet',
     image: 'https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=900',
     tag: 'Late-night legend',
@@ -57,6 +67,11 @@ const products: Product[] = [
     name: 'The Crush Burger',
     description: 'Smash-seared beef, molten cheddar, pickle confetti. No small talk.',
     price: 16.25,
+    originalPrice: 18.05,
+    discount: 10,
+    rating: 4.8,
+    reviews: 184,
+    popular: true,
     category: 'Savory',
     image: 'https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=900',
     tag: 'Main character',
@@ -67,6 +82,8 @@ const products: Product[] = [
     name: 'Disco Tacos',
     description: 'Three crispy shells, lime crema, and enough neon salsa to start a dance floor.',
     price: 12.75,
+    rating: 4.7,
+    reviews: 96,
     category: 'Savory',
     image: 'https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=900',
     tag: 'Crowd pleaser',
@@ -76,7 +93,11 @@ const products: Product[] = [
     id: 'soft-serve-cloud',
     name: 'Soft Serve Cloud',
     description: 'Swirled vanilla, burnt caramel ribbon, and a tiny crunch of chaos.',
-    price: 8.5,
+    price: 9,
+    originalPrice: 10,
+    discount: 10,
+    rating: 4.6,
+    reviews: 72,
     category: 'Sweet',
     image: 'https://images.pexels.com/photos/1352296/pexels-photo-1352296.jpeg?auto=compress&cs=tinysrgb&w=900',
     tag: 'Small but mighty',
@@ -86,7 +107,12 @@ const products: Product[] = [
     id: 'green-room-noodles',
     name: 'Green Room Noodles',
     description: 'Glossy noodles, chili crisp, bok choy, and a little post-gig glow.',
-    price: 14.75,
+    price: 11.8,
+    originalPrice: 16.86,
+    discount: 30,
+    rating: 4.9,
+    reviews: 211,
+    popular: true,
     category: 'Savory',
     image: 'https://images.pexels.com/photos/2347311/pexels-photo-2347311.jpeg?auto=compress&cs=tinysrgb&w=900',
     tag: 'Comfort in 4K',
@@ -97,6 +123,8 @@ const products: Product[] = [
     name: 'Electric Lemonade',
     description: 'Tart, fizzy, ice-cold. The drink equivalent of changing your hair.',
     price: 6.25,
+    rating: 4.5,
+    reviews: 58,
     category: 'Sip',
     image: 'https://images.pexels.com/photos/96974/pexels-photo-96974.jpeg?auto=compress&cs=tinysrgb&w=900',
     tag: 'Very refreshing',
@@ -116,9 +144,23 @@ const trackerSteps = [
   { label: 'Rider is on the way with your food', detail: 'The route is confident. The delivery is not.', emoji: '🚴', icon: Bike },
   { label: 'Poye poye, food never came', detail: 'A beautiful ending to a fictional order.', emoji: '🍽️', icon: PackageCheck },
 ];
+const arrivalSeconds = 180;
+const stageSeconds = 45;
+const routePoints = [
+  { left: 12, top: 77 },
+  { left: 31, top: 60 },
+  { left: 52, top: 44 },
+  { left: 71, top: 29 },
+];
 
 function money(value: number) {
   return `$${value.toFixed(2)}`;
+}
+
+function clock(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, '0')}`;
 }
 
 function Logo({ compact = false }: { compact?: boolean }) {
@@ -207,12 +249,25 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (product: Pr
     <article className="group relative flex flex-col overflow-hidden rounded-[1.65rem] border border-[#d6d5ca] bg-[#fbf9f1] transition-all duration-300 hover:-translate-y-1 hover:shadow-[8px_10px_0_#d9d5c8]" data-testid={`card-product-${product.id}`}>
       <div className="relative aspect-[1.18] overflow-hidden">
         <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" data-testid={`img-product-${product.id}`} />
-        <div className="absolute left-4 top-4 rounded-full px-3 py-1.5 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#252f9f]" style={{ backgroundColor: product.accent }}>{product.tag}</div>
+        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <div className="rounded-full px-3 py-1.5 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#252f9f]" style={{ backgroundColor: product.accent }}>{product.tag}</div>
+          {product.popular && <div className="rounded-full border-2 border-[#252f9f] bg-[#f07863] px-3 py-1 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#252f9f] shadow-[2px_2px_0_#252f9f]">Popular</div>}
+        </div>
       </div>
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-display text-[21px] font-bold leading-[1.05] tracking-[-.04em]">{product.name}</h3>
-          <span className="font-mono-custom text-sm text-[#252f9f]">{money(product.price)}</span>
+          <div className="text-right">
+            {product.discount && <div className="font-mono-custom text-[9px] uppercase tracking-[.08em] text-[#f07863]">{product.discount}% off</div>}
+            <div className="flex items-center gap-2">
+              {product.originalPrice && <span className="font-mono-custom text-[10px] text-[#a4a6b4] line-through">{money(product.originalPrice)}</span>}
+              <span className="font-mono-custom text-sm font-bold text-[#252f9f]">{money(product.price)}</span>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2 text-xs" aria-label={`${product.rating} out of 5 stars from ${product.reviews} reviews`} data-testid={`review-${product.id}`}>
+          <span className="tracking-[.08em] text-[#f1b81b]">★★★★★</span>
+          <span className="font-mono-custom text-[10px] text-[#6570a4]">{product.rating} / 5 · {product.reviews} reviews</span>
         </div>
         <p className="mt-3 flex-1 text-[13px] leading-relaxed text-[#6570a4]">{product.description}</p>
         <button onClick={() => onAdd(product)} className="mt-5 flex w-full items-center justify-between rounded-xl bg-[#252f9f] px-4 py-3 text-left text-[#f8f3e8] transition-all hover:bg-[#1c247d] active:scale-[.98]" data-testid={`button-add-${product.id}`}>
@@ -346,7 +401,7 @@ function BagDrawer({ cart, onClose, onChange, onCheckout }: { cart: CartLine[]; 
               {cart.map((item) => (
                 <div key={item.id} className="flex gap-3 rounded-2xl border border-[#d5d4c8] bg-[#fbf9f1] p-3" data-testid={`row-cart-${item.id}`}>
                   <img src={item.image} alt="" className="h-20 w-20 rounded-xl object-cover" />
-                  <div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><h3 className="font-display font-bold text-[#252f9f]">{item.name}</h3><span className="font-mono-custom text-xs">{money(item.price * item.quantity)}</span></div><p className="mt-1 text-xs text-[#6570a4]">{item.tag}</p><div className="mt-3 flex items-center gap-3"><button onClick={() => onChange(item.id, -1)} className="grid h-7 w-7 place-items-center rounded-full border border-[#c9c9bf] text-[#252f9f]" data-testid={`button-decrease-${item.id}`}><Minus size={13} /></button><span className="font-mono-custom text-xs" data-testid={`text-quantity-${item.id}`}>{item.quantity}</span><button onClick={() => onChange(item.id, 1)} className="grid h-7 w-7 place-items-center rounded-full bg-[#f1db2f] text-[#252f9f]" data-testid={`button-increase-${item.id}`}><Plus size={13} /></button><button onClick={() => onChange(item.id, -item.quantity)} className="ml-auto text-[#6570a4] hover:text-[#f07863]" data-testid={`button-remove-${item.id}`}><Trash2 size={15} /></button></div></div>
+                   <div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><h3 className="font-display font-bold text-[#252f9f]">{item.name}</h3><span className="font-mono-custom text-xs">{money(item.price * item.quantity)}</span></div><div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#6570a4]"><span>{item.tag}</span>{item.popular && <span className="rounded-full bg-[#f07863] px-2 py-1 font-mono-custom text-[8px] uppercase tracking-[.08em] text-[#252f9f]">Popular pick</span>}{item.discount && <span className="font-mono-custom text-[9px] uppercase text-[#3c826a]">{item.discount}% off</span>}</div><div className="mt-2 flex items-center gap-2"><span className="tracking-[.08em] text-[11px] text-[#f1b81b]">★★★★★</span><span className="font-mono-custom text-[9px] text-[#6570a4]">{item.rating}</span></div><div className="mt-3 flex items-center gap-3"><button onClick={() => onChange(item.id, -1)} className="grid h-7 w-7 place-items-center rounded-full border border-[#c9c9bf] text-[#252f9f]" data-testid={`button-decrease-${item.id}`}><Minus size={13} /></button><span className="font-mono-custom text-xs" data-testid={`text-quantity-${item.id}`}>{item.quantity}</span><button onClick={() => onChange(item.id, 1)} className="grid h-7 w-7 place-items-center rounded-full bg-[#f1db2f] text-[#252f9f]" data-testid={`button-increase-${item.id}`}><Plus size={13} /></button><button onClick={() => onChange(item.id, -item.quantity)} className="ml-auto text-[#6570a4] hover:text-[#f07863]" data-testid={`button-remove-${item.id}`}><Trash2 size={15} /></button></div></div>
                 </div>
               ))}
             </div>
@@ -423,15 +478,28 @@ function Checkout({ cart, onBack, onPlace }: { cart: CartLine[]; onBack: () => v
 }
 
 function Tracker({ orderNumber, onAgain }: { orderNumber: string; onAgain: () => void }) {
-  const [activeStep, setActiveStep] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   useEffect(() => {
-    const timer = window.setInterval(() => setActiveStep((step) => Math.min(step + 1, trackerSteps.length - 1)), 2600);
+    const timer = window.setInterval(() => setElapsedSeconds((seconds) => Math.min(seconds + 1, arrivalSeconds)), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  const activeStep = Math.min(trackerSteps.length - 1, Math.floor(elapsedSeconds / stageSeconds));
+  const remainingSeconds = Math.max(0, arrivalSeconds - elapsedSeconds);
+  const rawRouteSegment = (elapsedSeconds / arrivalSeconds) * (routePoints.length - 1);
+  const routeSegment = Math.min(routePoints.length - 2, Math.floor(rawRouteSegment));
+  const routeSegmentProgress = routeSegment === routePoints.length - 2 ? 1 : rawRouteSegment - routeSegment;
+  const routeStart = routePoints[routeSegment];
+  const routeEnd = routePoints[routeSegment + 1];
+  const riderPosition = {
+    left: routeStart.left + (routeEnd.left - routeStart.left) * routeSegmentProgress,
+    top: routeStart.top + (routeEnd.top - routeStart.top) * routeSegmentProgress,
+  };
+  const routeProgress = Math.min(100, (elapsedSeconds / arrivalSeconds) * 100);
+  const currentStageRemaining = activeStep === trackerSteps.length - 1 ? remainingSeconds : stageSeconds - (elapsedSeconds % stageSeconds);
   const CurrentIcon = trackerSteps[activeStep].icon;
   return (
     <main className="mx-auto max-w-[1280px] px-5 py-10 lg:px-10 lg:py-16" data-testid="page-tracking">
-      <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f07863]">Order {orderNumber}</p><h1 className="mt-3 font-display text-[clamp(3.3rem,7vw,6.8rem)] font-bold leading-[.86] tracking-[-.09em] text-[#252f9f]">It is<br /><span className="text-[#f07863]">on the way.</span></h1></div><button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#d5d4c8] bg-[#fbf9f1] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#252f9f] sm:self-end" data-testid="button-order-again"><RotateCcw size={14} /> Order again</button></div>
+       <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f07863]">Order {orderNumber}</p><h1 className="mt-3 font-display text-[clamp(3.3rem,7vw,6.8rem)] font-bold leading-[.86] tracking-[-.09em] text-[#252f9f]">It is<br /><span className="text-[#f07863]">on the way-ish.</span></h1><p className="mt-5 max-w-[490px] text-base leading-relaxed text-[#6570a4]">A three-minute suspense film starring one tiny scooter, four dramatic stages, and absolutely no dispatched food.</p></div><button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#d5d4c8] bg-[#fbf9f1] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#252f9f] sm:self-end" data-testid="button-order-again"><RotateCcw size={14} /> Order again</button></div>
       <div className="grid gap-7 lg:grid-cols-[1.15fr_.85fr]">
          <div>
          <section className="relative min-h-[440px] overflow-hidden rounded-[1.8rem] border border-[#bfc0d7] bg-[#d9e4dc]" data-testid="map-tracker">
@@ -439,12 +507,15 @@ function Tracker({ orderNumber, onAgain }: { orderNumber: string; onAgain: () =>
           <div className="absolute left-[12%] top-[24%] h-36 w-56 -rotate-12 rounded-[45%] border-2 border-[#9ab0a4] bg-[#cfddd2]/60" /><div className="absolute right-[10%] top-[12%] h-52 w-44 rotate-45 rounded-[40%] border-2 border-[#9ab0a4] bg-[#cfddd2]/60" /><div className="absolute bottom-[8%] left-[35%] h-44 w-64 rotate-12 rounded-[46%] border-2 border-[#9ab0a4] bg-[#cfddd2]/60" />
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 600 440" preserveAspectRatio="none" aria-hidden="true"><path d="M80 375 C120 280 205 325 234 240 S350 120 420 174 S470 300 550 84" fill="none" stroke="#252f9f" strokeWidth="5" strokeLinecap="round" className="tracking-dash" /></svg>
           <div className="absolute left-[12%] top-[77%] grid h-12 w-12 place-items-center rounded-full border-4 border-[#f8f3e8] bg-[#f07863] text-[#252f9f] shadow-[3px_3px_0_#252f9f]"><HomeIcon size={20} /></div>
-          <div className="absolute left-[71%] top-[29%] grid h-14 w-14 place-items-center rounded-full border-4 border-[#f8f3e8] bg-[#252f9f] text-[#f1db2f] shadow-[3px_3px_0_#f07863] transition-all duration-700" style={{ transform: `translate(${activeStep * 4}px, ${activeStep * 6}px)` }}><Bike size={23} /></div>
+          <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-[left,top] duration-1000 ease-linear" style={{ left: `${riderPosition.left}%`, top: `${riderPosition.top}%` }} data-testid="animated-rider">
+            <div className="grid h-14 w-14 rotate-[-12deg] place-items-center rounded-full border-4 border-[#f8f3e8] bg-[#252f9f] text-[#f1db2f] shadow-[3px_3px_0_#f07863] animate-bounce"><Bike size={23} /></div>
+            <div className="absolute -right-16 -top-9 rotate-3 rounded-full border-2 border-[#252f9f] bg-[#f1db2f] px-2.5 py-1 font-mono-custom text-[8px] uppercase tracking-[.08em] text-[#252f9f] shadow-[2px_2px_0_#252f9f]">vroom-ish</div>
+          </div>
           <div className="absolute left-5 top-5 rounded-xl border border-[#b7c5b9] bg-[#edf3ea]/85 px-3 py-2 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#252f9f] backdrop-blur-sm"><MapPinned size={13} className="mr-2 inline" /> Imaginary neighborhood</div>
-          <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between rounded-xl border border-[#b7c5b9] bg-[#edf3ea]/90 p-3 backdrop-blur-sm"><span className="font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]">Rider confidence</span><span className="font-display font-bold text-[#252f9f]">{Math.min(31 + activeStep * 18, 82)}%</span></div>
+          <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-[#b7c5b9] bg-[#edf3ea]/90 p-3 backdrop-blur-sm"><div className="flex items-center justify-between"><span className="font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]">Rider confidence</span><span className="font-display font-bold text-[#252f9f]">{Math.min(31 + Math.round(routeProgress * .51), 82)}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-[#c3d1c6]"><div className="h-full rounded-full bg-[#f07863] transition-[width] duration-1000 ease-linear" style={{ width: `${routeProgress}%` }} /></div></div>
         </section>
          <div className="mt-4 rounded-2xl border-2 border-[#252f9f] bg-[#f1db2f] px-5 py-4 text-[#252f9f] shadow-[5px_5px_0_#f07863]" data-testid="text-arrival-estimate">
-           <div className="flex items-center gap-3"><Timer size={20} /><p className="font-display text-lg font-bold">Arriving within 3–5 minutes*</p></div>
+           <div className="flex items-center gap-3"><Timer size={20} /><p className="font-display text-lg font-bold">Arriving in {clock(remainingSeconds)}*</p></div>
            <p className="mt-1 pl-8 font-mono-custom text-[9px] uppercase tracking-[.11em]">*Sarcasm detected. Please enjoy the route.</p>
          </div>
          </div>
@@ -452,7 +523,7 @@ function Tracker({ orderNumber, onAgain }: { orderNumber: string; onAgain: () =>
           <div className="flex items-start justify-between gap-4 border-b border-[#d5d4c8] pb-6"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.14em] text-[#6570a4]">Live status</p><h2 className="mt-2 font-display text-2xl font-bold tracking-[-.05em] text-[#252f9f]" data-testid="text-current-status">{trackerSteps[activeStep].label}</h2></div><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f1db2f] text-[#252f9f] animate-pop"><CurrentIcon size={23} /></div></div>
            <div className="relative mt-7 space-y-7 pl-2">{trackerSteps.map((step, index) => { const done = index <= activeStep; return <div key={step.label} className="relative flex gap-4" data-testid={`tracker-step-${index}`}><div className={`relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 text-lg transition-all ${done ? 'border-[#252f9f] bg-[#252f9f]' : 'border-[#d5d4c8] bg-[#f4efe4] grayscale'}`}><span aria-hidden="true">{step.emoji}</span></div>{index < trackerSteps.length - 1 && <div className={`absolute left-[17px] top-9 h-8 w-0.5 ${index < activeStep ? 'bg-[#252f9f]' : 'bg-[#d5d4c8]'}`} />}<div><p className={`font-display font-bold ${done ? 'text-[#252f9f]' : 'text-[#a4a6b4]'}`}>{step.label}</p><p className={`mt-1 text-xs leading-relaxed ${done ? 'text-[#6570a4]' : 'text-[#a4a6b4]'}`}>{step.detail}</p></div></div>; })}</div>
           <div className="mt-8 rounded-xl bg-[#f07863] p-4 text-[#252f9f]" data-testid="text-tracker-wink"><div className="flex gap-3"><Sparkles size={18} className="shrink-0" /><p className="font-display text-sm font-bold leading-relaxed">Plot twist: this order will never arrive. But look at that little scooter go.</p></div></div>
-          <div className="mt-5 flex items-center gap-2 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]"><Timer size={13} /> Estimated arrival: in your imagination, shortly</div>
+           <div className="mt-5 flex items-center justify-between gap-3 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]"><span className="flex items-center gap-2"><Timer size={13} /> Stage {activeStep + 1} of 4</span><span>{currentStageRemaining ? `${clock(currentStageRemaining)} until next bit` : 'final bit unlocked'}</span></div>
         </section>
       </div>
     </main>
