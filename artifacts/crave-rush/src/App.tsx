@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bike,
+  Bell,
   BookOpen,
   Check,
   ChefHat,
@@ -445,6 +446,7 @@ function Checkout({ cart, onBack, onPlace }: { cart: CartLine[]; onBack: () => v
   const [activePromo, setActivePromo] = useState<(typeof promoCodes)[number] | null>(null);
   const [promoMessage, setPromoMessage] = useState('');
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const matchingPromo = promoCodes.find((item) => item.code === promo.trim().toUpperCase());
   const discount = activePromo ? subtotal * activePromo.rate : 0;
   const fees = 2.75;
   const total = subtotal + fees - discount;
@@ -476,6 +478,7 @@ function Checkout({ cart, onBack, onPlace }: { cart: CartLine[]; onBack: () => v
                 <button key={code.code} onClick={() => choosePromo(code)} className="rounded-full border border-[#252f9f] px-3 py-2 font-mono-custom text-[9px] uppercase tracking-[.08em] text-[#252f9f] transition hover:-translate-y-0.5" style={{ backgroundColor: code.color }} data-testid={`button-promo-${code.code.toLowerCase()}`}>{code.code} / {code.label}</button>
               ))}
             </div>
+            {matchingPromo && <div className="mt-4 rounded-xl border border-[#3c826a] bg-[#e1f1e8] px-3 py-2.5 text-xs text-[#27664f]" data-testid="text-promo-preview"><span className="font-mono-custom text-[9px] uppercase tracking-[.08em]">Live preview:</span> {matchingPromo.label} would save {money(subtotal * matchingPromo.rate)}. Click Apply to make the delusion official.</div>}
             {promoMessage && <p className={`mt-3 text-xs ${activePromo ? 'text-[#3c826a]' : 'text-[#f07863]'}`} data-testid="text-promo-message">{promoMessage}</p>}
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[#adb0c9] bg-[#e9e5d9] p-4 text-sm text-[#6570a4]"><CreditCard size={18} className="text-[#252f9f]" /><span>Payment is pretend. Your bank can relax.</span><CircleCheck size={17} className="ml-auto text-[#3c826a]" /></div>
@@ -483,7 +486,7 @@ function Checkout({ cart, onBack, onPlace }: { cart: CartLine[]; onBack: () => v
         <aside className="rounded-[1.5rem] border border-[#252f9f] bg-[#252f9f] p-6 text-[#f8f3e8] shadow-[8px_8px_0_#f07863] sm:p-8">
           <div className="mb-7 flex items-center justify-between"><h2 className="font-display text-2xl font-bold tracking-[-.05em]">The receipt</h2><span className="rotate-3 rounded bg-[#f1db2f] px-2 py-1 font-mono-custom text-[9px] uppercase text-[#252f9f]">Very real*</span></div>
           <div className="space-y-3 border-b border-[#6872c4] pb-6">{cart.map((item) => <div key={item.id} className="flex justify-between gap-3 text-sm"><span className="text-[#cbd0ff]">{item.quantity} × {item.name}</span><span className="font-mono-custom text-xs">{money(item.price * item.quantity)}</span></div>)}</div>
-           <div className="space-y-3 border-b border-[#6872c4] py-6 font-mono-custom text-xs"><div className="flex justify-between"><span className="text-[#cbd0ff]">Craving subtotal</span><span>{money(subtotal)}</span></div><div className="flex justify-between"><span className="text-[#cbd0ff]">Theatre & handling</span><span>{money(fees)}</span></div><div className="flex justify-between text-[#f1db2f]"><span>{activePromo ? `${activePromo.code} discount` : 'Potential discount'}</span><span>{activePromo ? `−${money(discount)}` : '—'}</span></div></div>
+           <div className="space-y-3 border-b border-[#6872c4] py-6 font-mono-custom text-xs"><div className="flex justify-between"><span className="text-[#cbd0ff]">Craving subtotal</span><span>{money(subtotal)}</span></div><div className="flex justify-between"><span className="text-[#cbd0ff]">Theatre & handling</span><span>{money(fees)}</span></div><div className="flex justify-between text-[#f1db2f]"><span>{activePromo ? `${activePromo.code} discount` : matchingPromo ? `${matchingPromo.code} preview` : 'Potential discount'}</span><span>{activePromo ? `−${money(discount)}` : matchingPromo ? `−${money(subtotal * matchingPromo.rate)}` : '—'}</span></div></div>
           <div className="flex items-end justify-between py-6"><span className="font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#cbd0ff]">Total-ish</span><span className="font-display text-4xl font-bold" data-testid="text-checkout-total">{money(total)}</span></div>
           <button onClick={() => onPlace(address)} disabled={!address.trim()} className="flex w-full items-center justify-between rounded-xl bg-[#f07863] px-5 py-4 font-mono-custom text-[11px] uppercase tracking-[.12em] text-[#252f9f] transition hover:bg-[#ff8976] disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-place-order"><span>Place the fictional order</span><ArrowRight size={17} /></button>
           <p className="mt-4 text-center font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#aeb5f0]">*No food will be dispatched</p>
@@ -493,10 +496,11 @@ function Checkout({ cart, onBack, onPlace }: { cart: CartLine[]; onBack: () => v
   );
 }
 
-function RecipeReveal({ cart, dark = false }: { cart: CartLine[]; dark?: boolean }) {
+function RecipeReveal({ cart, dark = false, onClose }: { cart: CartLine[]; dark?: boolean; onClose?: () => void }) {
   const [openRecipe, setOpenRecipe] = useState<string | null>(null);
   return (
-    <section className={`rounded-[1.8rem] border p-6 sm:p-8 ${dark ? 'border-[#6872c4] bg-[#303aa9] text-[#f8f3e8]' : 'border-[#d5d4c8] bg-[#fbf9f1]'}`} data-testid="recipe-reveal">
+    <section className={`relative rounded-[1.8rem] border p-6 sm:p-8 ${dark ? 'border-[#6872c4] bg-[#303aa9] text-[#f8f3e8]' : 'border-[#d5d4c8] bg-[#fbf9f1]'}`} data-testid="recipe-reveal">
+      {onClose && <button onClick={onClose} className={`absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full ${dark ? 'bg-[#252f9f] text-[#f8f3e8]' : 'bg-[#f4efe4] text-[#252f9f]'}`} aria-label="Close recipe" data-testid="button-close-recipe"><X size={15} /></button>}
       <div className="flex items-start gap-3">
         <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#f1db2f] text-[#252f9f]"><BookOpen size={21} /></div>
         <div>
@@ -537,18 +541,27 @@ function RecipeReveal({ cart, dark = false }: { cart: CartLine[]; dark?: boolean
   );
 }
 
+function RecipePrompt({ onOpen, onDismiss }: { onOpen: () => void; onDismiss: () => void }) {
+  return (
+    <div className="animate-slide-in fixed right-5 top-24 z-[55] w-[min(380px,calc(100vw-2.5rem))] rounded-2xl border-2 border-[#252f9f] bg-[#f1db2f] p-4 text-[#252f9f] shadow-[6px_6px_0_#f07863]" role="status" data-testid="toast-recipe-prompt">
+      <div className="flex gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f07863]"><BookOpen size={19} /></div>
+        <div className="min-w-0 flex-1 pr-5"><p className="font-mono-custom text-[9px] uppercase tracking-[.13em]">Recipe emergency</p><p className="mt-1 font-display text-sm font-bold leading-tight">Want to know how the chef made it, or should we let the mystery age gracefully?</p></div>
+        <button onClick={onDismiss} className="absolute right-3 top-3 rounded-full p-1 text-[#252f9f]" aria-label="Dismiss recipe prompt" data-testid="button-dismiss-recipe-prompt"><X size={15} /></button>
+      </div>
+      <button onClick={onOpen} className="mt-4 w-full rounded-xl bg-[#252f9f] px-3 py-2.5 font-mono-custom text-[10px] uppercase tracking-[.1em] text-[#f8f3e8]" data-testid="button-open-recipe-prompt">Show me the alleged recipe</button>
+    </div>
+  );
+}
+
 function Finale({ orderNumber, cart, onAgain }: { orderNumber: string; cart: CartLine[]; onAgain: () => void }) {
-  const [finalSeconds, setFinalSeconds] = useState(stageSeconds);
-  useEffect(() => {
-    const timer = window.setInterval(() => setFinalSeconds((seconds) => Math.max(0, seconds - 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const [recipeOpen, setRecipeOpen] = useState(false);
   return (
     <main className="relative min-h-[calc(100dvh-73px)] overflow-hidden bg-[#252f9f] px-5 py-10 text-[#f8f3e8] lg:px-10 lg:py-16" data-testid="page-finale">
       <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full border-[2px] border-dashed border-[#6872c4] animate-[spin_18s_linear_infinite]" />
       <div className="pointer-events-none absolute -right-16 bottom-12 h-96 w-96 rounded-full border-[2px] border-dashed border-[#6872c4] animate-[spin_24s_linear_infinite_reverse]" />
       <div className="relative mx-auto max-w-[1180px]">
-        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f1db2f]">Order {orderNumber} / phase 3 of 3</p><p className="mt-3 font-mono-custom text-[10px] uppercase tracking-[.14em] text-[#aeb5f0]">The grand delivery reveal</p></div>
           <button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#6872c4] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#f8f3e8] transition hover:bg-[#303aa9] sm:self-end" data-testid="button-order-again-finale"><RotateCcw size={14} /> Order again</button>
         </div>
@@ -560,7 +573,7 @@ function Finale({ orderNumber, cart, onAgain }: { orderNumber: string; cart: Car
             <p className="mt-6 max-w-[540px] text-base leading-relaxed text-[#cbd0ff]">After a full three-minute cinematic journey, the meal has bravely remained exactly where it started. The restaurant calls this “freshness.” We call it a plot hole with excellent margins.</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <div className="rounded-xl border border-[#6872c4] bg-[#303aa9] px-4 py-3"><p className="font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#aeb5f0]">Refund status</p><p className="mt-1 font-display text-xl font-bold text-[#f1db2f]">Still yours</p></div>
-              <div className="rounded-xl border border-[#6872c4] bg-[#303aa9] px-4 py-3"><p className="font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#aeb5f0]">Final phase timer</p><p className="mt-1 font-display text-xl font-bold text-[#f8f3e8]">{clock(finalSeconds)}</p></div>
+              <button onClick={() => setRecipeOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-[#f07863] bg-[#f07863] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.1em] text-[#252f9f]" data-testid="button-open-recipe-finale"><BookOpen size={15} /> Open recipe desk</button>
             </div>
           </div>
           <div className="relative mx-auto h-[390px] w-full max-w-[440px]">
@@ -572,14 +585,17 @@ function Finale({ orderNumber, cart, onAgain }: { orderNumber: string; cart: Car
             <div className="absolute right-[9%] top-[8%] rounded-full bg-[#f07863] p-3 text-[#252f9f] animate-[spin_8s_linear_infinite]"><ChefHat size={24} /></div>
           </div>
         </div>
-        <div className="mt-12"><RecipeReveal cart={cart} dark /></div>
       </div>
+      {recipeOpen && <div className="fixed inset-0 z-[50] overflow-y-auto bg-[#252f9f]/80 px-5 py-10 backdrop-blur-sm"><div className="mx-auto max-w-[760px]"><RecipeReveal cart={cart} dark onClose={() => setRecipeOpen(false)} /></div></div>}
     </main>
   );
 }
 
 function Tracker({ orderNumber, cart, onAgain, onFinish }: { orderNumber: string; cart: CartLine[]; onAgain: () => void; onFinish: () => void }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [recipeToastOpen, setRecipeToastOpen] = useState(true);
+  const [recipeOpen, setRecipeOpen] = useState(false);
+  const [notifyWhenArrives, setNotifyWhenArrives] = useState(false);
   useEffect(() => {
     const timer = window.setInterval(() => setElapsedSeconds((seconds) => Math.min(seconds + 1, arrivalSeconds)), 1000);
     return () => window.clearInterval(timer);
@@ -603,6 +619,7 @@ function Tracker({ orderNumber, cart, onAgain, onFinish }: { orderNumber: string
   const CurrentIcon = trackerSteps[activeStep].icon;
   return (
     <main className="mx-auto max-w-[1280px] px-5 py-10 lg:px-10 lg:py-16" data-testid="page-tracking">
+       {recipeToastOpen && <RecipePrompt onOpen={() => { setRecipeToastOpen(false); setRecipeOpen(true); }} onDismiss={() => setRecipeToastOpen(false)} />}
        <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.16em] text-[#f07863]">Order {orderNumber}</p><h1 className="mt-3 font-display text-[clamp(3.3rem,7vw,6.8rem)] font-bold leading-[.86] tracking-[-.09em] text-[#252f9f]">It is<br /><span className="text-[#f07863]">on the way-ish.</span></h1><p className="mt-5 max-w-[490px] text-base leading-relaxed text-[#6570a4]">A three-minute suspense film in three acts: one pan, one scooter, and one restaurant with an excellent return policy.</p></div><button onClick={onAgain} className="inline-flex items-center gap-2 self-start rounded-full border border-[#d5d4c8] bg-[#fbf9f1] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.12em] text-[#252f9f] sm:self-end" data-testid="button-order-again"><RotateCcw size={14} /> Order again</button></div>
       <div className="grid gap-7 lg:grid-cols-[1.15fr_.85fr]">
          <div>
@@ -622,15 +639,21 @@ function Tracker({ orderNumber, cart, onAgain, onFinish }: { orderNumber: string
            <div className="flex items-center gap-3"><Timer size={20} /><p className="font-display text-lg font-bold">Arriving in {clock(remainingSeconds)}*</p></div>
            <p className="mt-1 pl-8 font-mono-custom text-[9px] uppercase tracking-[.11em]">*Sarcasm detected. Please enjoy the route.</p>
          </div>
+          <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#d5d4c8] bg-[#fbf9f1] p-4" data-testid="toggle-arrival-notification">
+            <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${notifyWhenArrives ? 'bg-[#b9e2d0] text-[#252f9f]' : 'bg-[#f4efe4] text-[#6570a4]'}`}><Bell size={18} /></div>
+            <span className="min-w-0 flex-1"><span className="block font-display text-sm font-bold text-[#252f9f]">Want a notification when the food arrives?</span><span className="mt-1 block text-xs text-[#6570a4]">{notifyWhenArrives ? 'Notification armed. We will alert you the moment it does not arrive.' : 'We can notify you, emotionally and with questionable timing.'}</span></span>
+            <input type="checkbox" checked={notifyWhenArrives} onChange={(event) => setNotifyWhenArrives(event.target.checked)} className="h-5 w-5 accent-[#252f9f]" aria-label="Notify me when the food arrives" />
+          </label>
          </div>
         <section className="rounded-[1.8rem] border border-[#d5d4c8] bg-[#fbf9f1] p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4 border-b border-[#d5d4c8] pb-6"><div><p className="font-mono-custom text-[10px] uppercase tracking-[.14em] text-[#6570a4]">Live status</p><h2 className="mt-2 font-display text-2xl font-bold tracking-[-.05em] text-[#252f9f]" data-testid="text-current-status">{trackerSteps[activeStep].label}</h2></div><div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#f1db2f] text-[#252f9f] animate-pop"><CurrentIcon size={23} /></div></div>
            <div className="relative mt-7 space-y-7 pl-2">{trackerSteps.map((step, index) => { const done = index <= activeStep; return <div key={step.label} className="relative flex gap-4" data-testid={`tracker-step-${index}`}><div className={`relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 text-lg transition-all ${done ? 'border-[#252f9f] bg-[#252f9f]' : 'border-[#d5d4c8] bg-[#f4efe4] grayscale'}`}><span aria-hidden="true">{step.emoji}</span></div>{index < trackerSteps.length - 1 && <div className={`absolute left-[17px] top-9 h-8 w-0.5 ${index < activeStep ? 'bg-[#252f9f]' : 'bg-[#d5d4c8]'}`} />}<div><p className={`font-display font-bold ${done ? 'text-[#252f9f]' : 'text-[#a4a6b4]'}`}>{step.label}</p><p className={`mt-1 text-xs leading-relaxed ${done ? 'text-[#6570a4]' : 'text-[#a4a6b4]'}`}>{step.detail}</p></div></div>; })}</div>
           <div className="mt-8 rounded-xl bg-[#f07863] p-4 text-[#252f9f]" data-testid="text-tracker-wink"><div className="flex gap-3"><Sparkles size={18} className="shrink-0" /><p className="font-display text-sm font-bold leading-relaxed">Plot twist: this order will never arrive. But look at that little scooter go.</p></div></div>
             <div className="mt-5 flex items-center justify-between gap-3 font-mono-custom text-[9px] uppercase tracking-[.1em] text-[#6570a4]"><span className="flex items-center gap-2"><Timer size={13} /> Phase {activeStep + 1} of 3</span><span>{currentStageRemaining ? `${clock(currentStageRemaining)} until next bit` : 'final bit unlocked'}</span></div>
-            <div className="mt-7"><RecipeReveal cart={cart} /></div>
+            <button onClick={() => setRecipeOpen(true)} className="mt-7 inline-flex items-center gap-2 rounded-xl border border-[#252f9f] bg-[#f1db2f] px-4 py-3 font-mono-custom text-[10px] uppercase tracking-[.1em] text-[#252f9f]" data-testid="button-open-recipe-manually"><BookOpen size={15} /> Open recipe desk manually</button>
         </section>
       </div>
+       {recipeOpen && <div className="fixed inset-0 z-[50] overflow-y-auto bg-[#252f9f]/30 px-5 py-10 backdrop-blur-sm"><div className="mx-auto max-w-[760px]"><RecipeReveal cart={cart} onClose={() => setRecipeOpen(false)} /></div></div>}
     </main>
   );
 }
