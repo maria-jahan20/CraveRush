@@ -1,6 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'leaflet/dist/leaflet.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -43,8 +44,8 @@
   --muted-foreground: 226 18% 42%;
   --accent: 59 92% 62%;
   --accent-foreground: 227 47% 17%;
-  --app-font-sans: 'Manrope', sans-serif;
-  --app-font-mono: 'DM Mono', monospace;
+  --app-font-sans: 'Plus Jakarta Sans', sans-serif;
+--app-font-mono: 'DM Mono', monospace;
   --radius: 1rem;
   --shadow-color: 228 40% 19%;
 }
@@ -105,7 +106,9 @@
   70% { transform: rotate(-2deg) scale(1.08); opacity: 1; }
   100% { transform: rotate(-4deg) scale(1); opacity: 1; }
 }
-.font-display { font-family: 'Space Grotesk', sans-serif; }
+.font-display {
+  font-family: 'Outfit', sans-serif;
+}
 .font-mono-custom { font-family: var(--app-font-mono); }
 .noise::after {
   content: '';
